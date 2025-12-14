@@ -2,10 +2,23 @@
 
 using namespace std;
 
+enum Opcode {
+    OP_READ, OP_WRITE, OP_DUPE, OP_PUSH, OP_ADD, OP_SUB, OP_MUL, OP_DIV,
+    OP_AND, OP_OR, OP_XOR, OP_REVERSE, OP_JEQ, OP_JGT, OP_JMP, OP_CALL,
+    OP_RET, OP_SIZE, OP_EMPTY, OP_HALT
+};
+
 stack<int> stck;
 int program_counter =0;
-vector<pair<string,string>> program;
+vector<pair<Opcode,string>> program;
 unordered_map<string, int> flags;
+unordered_map<string, Opcode> opcode_map = {
+    {"READ", OP_READ}, {"WRITE", OP_WRITE}, {"DUPE", OP_DUPE}, {"PUSH", OP_PUSH},
+    {"ADD", OP_ADD}, {"SUB", OP_SUB}, {"MUL", OP_MUL}, {"DIV", OP_DIV},
+    {"AND", OP_AND}, {"OR", OP_OR}, {"XOR", OP_XOR}, {"REVERSE", OP_REVERSE},
+    {"JEQ", OP_JEQ}, {"JGT", OP_JGT}, {"JMP", OP_JMP}, {"CALL", OP_CALL},
+    {"RET", OP_RET}, {"SIZE", OP_SIZE}, {"EMPTY", OP_EMPTY}, {"HALT", OP_HALT}
+};
 
 void PUSH(int a) {
     stck.push(a);
@@ -43,6 +56,23 @@ void SUB() {
     stck.push(a - b);
 }
 
+void AND() {
+    auto [a,b] = GET();
+    stck.push(a & b);
+}
+
+void OR() {
+    auto [a,b] = GET();
+    stck.push(a | b);
+}
+
+void XOR() {
+    auto [a,b] = GET();
+    stck.push(a ^ b);
+}
+
+
+
 void MUL() {
     auto [a,b] = GET();
     stck.push(a * b);
@@ -59,9 +89,12 @@ void READ() {
     stck.push(a);
 }
 
-void WRITE() {
-    cout<<stck.top()<<"\n";
-    stck.pop();
+void WRITE(const string &operand) {
+    if (operand.empty()) {
+        cout<<stck.top()<<"\n";
+        stck.pop();
+    }
+    else cout<<operand<<"\n";
 }
 
 void JEQ(string label) {
@@ -130,45 +163,43 @@ void parse_program(const string& file_path) {
             operand = line.substr(sp + 1);
             trim(operand);
         }
-        program.emplace_back(instr, operand);
+        auto it = opcode_map.find(instr);
+        if (it != opcode_map.end()) {
+            program.emplace_back(it->second, operand);
+        }
     }
 }
 
 int main() {
     parse_program("program.stack");
-
-    while (program[program_counter].first!="HALT") {
-        auto [instruction,operand] = program[program_counter];
+    if (flags.find("MAIN") == flags.end()) return 1;
+    program_counter = flags["MAIN"];
+    while (program[program_counter].first != OP_HALT) {
+        auto [opcode, operand] = program[program_counter];
         program_counter++;
 
-        if (instruction == "READ")
-            READ();
-        else if (instruction == "WRITE")
-            WRITE();
-        else if (instruction == "DUPE")
-            DUPE();
-        else if (instruction == "ADD")
-            ADD();
-        else if (instruction == "SUB")
-            SUB();
-        else if (instruction == "MUL")
-            MUL();
-        else if (instruction == "REVERSE")
-            REVERSE();
-        else if (instruction == "PUSH")
-            PUSH(stoi(operand));
-        else if (instruction == "JEQ")
-            JEQ(operand);
-        else if (instruction == "JGT")
-            JGT(operand);
-        else if (instruction == "JMP")
-            JMP(operand);
-        else if (instruction == "CALL")
-            CALL(operand);
-        else if (instruction == "RET")
-            RET();
-        else if (instruction == "SIZE")
-            SIZE();
+        switch (opcode) {
+            case OP_READ: READ(); break;
+            case OP_WRITE: WRITE(operand); break;
+            case OP_DUPE: DUPE(); break;
+            case OP_PUSH: PUSH(stoi(operand)); break;
+            case OP_ADD: ADD(); break;
+            case OP_SUB: SUB(); break;
+            case OP_MUL: MUL(); break;
+            case OP_DIV: DIV(); break;
+            case OP_AND: AND(); break;
+            case OP_OR: OR(); break;
+            case OP_XOR: XOR(); break;
+            case OP_REVERSE: REVERSE(); break;
+            case OP_JEQ: JEQ(operand); break;
+            case OP_JGT: JGT(operand); break;
+            case OP_JMP: JMP(operand); break;
+            case OP_CALL: CALL(operand); break;
+            case OP_RET: RET(); break;
+            case OP_SIZE: SIZE(); break;
+            case OP_EMPTY: EMPTY(); break;
+            case OP_HALT: break;
+        }
     }
     return 0;
 }

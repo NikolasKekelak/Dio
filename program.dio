@@ -1,0 +1,13 @@
+#n(n+1)/2
+WRITE 'ZADAJ n:'
+READ
+DUPE
+PUSH 1
+ADD
+MUL
+PUSH 2
+REVERSE
+DIV
+WRITE 'Suma od 1 po n je:'
+WRITE
+HALT

@@ -1,0 +1,14 @@
+MAIN:
+WRITE 'Give me n:'
+READ
+DUPE
+PUSH 1
+ADD
+MUL
+PUSH 2
+REVERSE 2
+DIV
+WRITE 'Answer:'
+WRITE
+LOAD program.dio
+HALT

@@ -5,7 +5,7 @@ using namespace std;
 enum Opcode {
     OP_READ, OP_WRITE, OP_DUPE, OP_PUSH, OP_ADD, OP_SUB, OP_MUL, OP_DIV,
     OP_AND, OP_OR, OP_XOR, OP_REVERSE, OP_JEQ, OP_JGT, OP_JMP, OP_CALL,
-    OP_RET, OP_SIZE, OP_EMPTY, OP_HALT
+    OP_RET, OP_SIZE, OP_EMPTY, OP_HALT, OP_LOAD
 };
 
 stack<int> stck;
@@ -17,7 +17,8 @@ unordered_map<string, Opcode> opcode_map = {
     {"ADD", OP_ADD}, {"SUB", OP_SUB}, {"MUL", OP_MUL}, {"DIV", OP_DIV},
     {"AND", OP_AND}, {"OR", OP_OR}, {"XOR", OP_XOR}, {"REVERSE", OP_REVERSE},
     {"JEQ", OP_JEQ}, {"JGT", OP_JGT}, {"JMP", OP_JMP}, {"CALL", OP_CALL},
-    {"RET", OP_RET}, {"SIZE", OP_SIZE}, {"EMPTY", OP_EMPTY}, {"HALT", OP_HALT}
+    {"RET", OP_RET}, {"SIZE", OP_SIZE}, {"EMPTY", OP_EMPTY}, {"HALT", OP_HALT},
+    {"LOAD", OP_LOAD}
 };
 
 void PUSH(int a) {
@@ -37,13 +38,26 @@ void DUPE() {
     stck.push(stck.top());
 }
 
-void REVERSE() {
-    stack<int> temp;
-    while(!stck.empty()) {
-        temp.push(stck.top());
+void reverse_stack(int n) {
+    queue<int> q;
+    while(n--) {q.push(stck.top()); stck.pop();}
+    while (!q.empty()) stck.push(q.front()), q.pop();
+}
+
+void REVERSE(const string &operand) {
+    if (operand.empty()) {
+        stack<int> temp;
+        while(!stck.empty()) {
+            temp.push(stck.top());
+            stck.pop();
+        }
+        stck = temp;
+    } else if (operand  == "TOP") {
+        int x = stck.top();
         stck.pop();
+        reverse_stack(x);
     }
-    stck = temp;
+    else reverse_stack(stoi(operand));
 }
 
 void ADD() {
@@ -170,10 +184,21 @@ void parse_program(const string& file_path) {
     }
 }
 
-int main() {
-    parse_program("program.stack");
-    if (flags.find("MAIN") == flags.end()) return 1;
+// DANGEROUS ONE
+
+void LOAD(const string &file) {
+    program.clear();
+    flags.clear();
+    program_counter = 0;
+    parse_program(file);
     program_counter = flags["MAIN"];
+
+}
+int main() {
+
+    parse_program("program.dio");
+    program_counter = flags["MAIN"];
+
     while (program[program_counter].first != OP_HALT) {
         auto [opcode, operand] = program[program_counter];
         program_counter++;
@@ -190,7 +215,7 @@ int main() {
             case OP_AND: AND(); break;
             case OP_OR: OR(); break;
             case OP_XOR: XOR(); break;
-            case OP_REVERSE: REVERSE(); break;
+            case OP_REVERSE: REVERSE(operand); break;
             case OP_JEQ: JEQ(operand); break;
             case OP_JGT: JGT(operand); break;
             case OP_JMP: JMP(operand); break;
@@ -198,6 +223,7 @@ int main() {
             case OP_RET: RET(); break;
             case OP_SIZE: SIZE(); break;
             case OP_EMPTY: EMPTY(); break;
+            case OP_LOAD: LOAD(operand); continue;
             case OP_HALT: break;
         }
     }
